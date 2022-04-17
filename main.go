@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 	_ "github.com/gorilla/mux"
+	"html/template"
 	"net/http"
 	"strings"
 )
@@ -60,22 +62,40 @@ func middleware(next http.Handler) http.Handler {
 
 }
 
+type ArticlesFormData struct {
+	Title  string
+	Body   string
+	URL    interface{}
+	Errors interface{}
+}
+
 func articlepost(w http.ResponseWriter, r *http.Request) {
-	htmla := `<!DOCTYPE html>
-	<html lang="en">
-	<head>
-	<title>创建文章 —— 我的技术博客</title>
-	</head>
-	<body>
-	<form action="/art" method="post">
-	<p><input type="text" name="title"></p>
-	<p><textarea name="body" cols="30" rows="10"></textarea></p>
-	<p><button type="submit">提交</button></p>
-	</form>
-	</body>
-	</html>`
+
+	err := r.ParseForm()
+	if err != nil {
+		fmt.Println("r.ParseForm() error")
+	}
+	data := ArticlesFormData{
+		Title:  r.PostFormValue("title"),
+		Body:   r.PostFormValue("body"),
+		URL:    "/art",
+		Errors: nil,
+	}
+
+	htmla, err := template.ParseFiles("create.gohtml")
+	if err != nil {
+       fmt.Println("error001")
+	}
+	if htmla == nil {
+		fmt.Println("htmla .... nil")
+	}
+    fmt.Println(htmla)
+	fmt.Println("htmla")
 	w.Write([]byte("post..........."))
-	fmt.Fprintf(w,htmla)
+	err = htmla.Execute(w,data)
+	if err != nil {
+
+	}
 }
 
 func n404(writer http.ResponseWriter, request *http.Request) {
