@@ -8,15 +8,33 @@ import (
 	"strings"
 )
 
+var rout = mux.NewRouter().StrictSlash(true)
+
 func main() {
-	rout := mux.NewRouter().StrictSlash(true)
+
 	rout.HandleFunc("/", handleFunc)
 	rout.HandleFunc("/art/{id:[0-9]+}", articleshowhandler).Methods("GET").Name("article.show....")
-	rout.HandleFunc("/bbb1/", articlepost).Methods("POST").Name("article.showP....")
+	rout.HandleFunc("/art/create", articlepost).Methods("GET").Name("article.showP....")
+	rout.HandleFunc("/art",artshowp).Methods("POST").Name("artshowP")
+	rout.HandleFunc("/art",artshow).Methods("GET").Name("artshow")
 	rout.NotFoundHandler = http.HandlerFunc(n404)
 	rout.Use(middleware)
 	http.ListenAndServe(":3000", removeTrailingSlash(rout))
 
+}
+
+func artshow(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("none.... data"))
+}
+
+func artshowp(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		fmt.Fprintf(w, "請提供正確資料")
+		return
+	}
+	fmt.Fprintf(w, "POST PostForm: %v <br>", r.PostFormValue("body"))
+	fmt.Fprintf(w, "POST Form: %v <br>", r.Form.Get("body"))
 }
 
 func removeTrailingSlash(rout *mux.Router) http.Handler {
@@ -43,8 +61,21 @@ func middleware(next http.Handler) http.Handler {
 }
 
 func articlepost(w http.ResponseWriter, r *http.Request) {
+	htmla := `<!DOCTYPE html>
+	<html lang="en">
+	<head>
+	<title>创建文章 —— 我的技术博客</title>
+	</head>
+	<body>
+	<form action="/art" method="post">
+	<p><input type="text" name="title"></p>
+	<p><textarea name="body" cols="30" rows="10"></textarea></p>
+	<p><button type="submit">提交</button></p>
+	</form>
+	</body>
+	</html>`
 	w.Write([]byte("post..........."))
-	fmt.Fprintf(w,"posttttt......")
+	fmt.Fprintf(w,htmla)
 }
 
 func n404(writer http.ResponseWriter, request *http.Request) {
