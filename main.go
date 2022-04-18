@@ -12,7 +12,11 @@ import (
 	"time"
 )
 
-var rout = mux.NewRouter().StrictSlash(true)
+var rout = muxinit().StrictSlash(true)
+
+func muxinit() *mux.Router {
+	return mux.NewRouter()
+}
 
 func main() {
 
@@ -50,8 +54,26 @@ func main() {
 	if err != nil {
        fmt.Println("db exec error...")
 	   fmt.Println(err)
+	}else {
+		fmt.Println("db ok")
 	}
 
+	stmt, err := db.Prepare("INSERT INTO articles(title, body) VALUES(?,?)")
+	if err != nil {
+		fmt.Println("stmt error...")
+	}
+	defer  db.Close()
+    defer stmt.Close()
+	 title1 := "1111111121"
+	 body1 := "2222222222334422222222222"
+
+	 rs, err := stmt.Exec(title1,body1)
+	if err != nil {
+		fmt.Println("stmt exec error")
+	}
+	if id, _ :=rs.LastInsertId(); id >0 {
+		fmt.Println("id: %v",id)
+	}
 
 	rout.HandleFunc("/", handleFunc)
 	rout.HandleFunc("/art/{id:[0-9]+}", articleshowhandler).Methods("GET").Name("article.show....")
@@ -70,12 +92,19 @@ func artshow(w http.ResponseWriter, r *http.Request) {
 
 func artshowp(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
-	if err != nil {
-		fmt.Fprintf(w, "請提供正確資料")
+	if checkerr(w, err) {
 		return
 	}
 	fmt.Fprintf(w, "POST PostForm: %v <br>", r.PostFormValue("body"))
 	fmt.Fprintf(w, "POST Form: %v <br>", r.Form.Get("body"))
+}
+
+func checkerr(w http.ResponseWriter, err error) bool {
+	if err != nil {
+		fmt.Fprintf(w, "請提供正確資料")
+		return true
+	}
+	return false
 }
 
 func removeTrailingSlash(rout *mux.Router) http.Handler {
