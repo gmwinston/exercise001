@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
@@ -8,11 +9,49 @@ import (
 	"html/template"
 	"net/http"
 	"strings"
+	"time"
 )
 
 var rout = mux.NewRouter().StrictSlash(true)
 
 func main() {
+
+	//config := mysql.Config{
+	//	User: "root",
+	//	Passwd: "123456",
+	//	Addr: "10.0.1.129:3306",
+	//	DBName: "test001",
+	//	AllowNativePasswords: true,
+	//}
+	//db, err := sql.Open("mysql", config.FormatDSN())
+	db, err := sql.Open("mysql", "root:123456@tcp(10.0.1.129:3306)/test001")
+
+	fmt.Println(db)
+	if err != nil {
+		fmt.Println("DB error...")
+	}
+	db.SetConnMaxLifetime(5*time.Second)
+	db.SetMaxOpenConns(25)
+	db.SetConnMaxIdleTime(25)
+
+	err = db.Ping()
+	if err != nil {
+		fmt.Println("DB error 02....")
+	}else {
+		fmt.Println("DB conn ")
+	}
+
+	createArticlesSQL := `CREATE TABLE IF NOT EXISTS articles(
+    id bigint(20) PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    title varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+    body longtext COLLATE utf8mb4_unicode_ci
+); `
+	db.Exec(createArticlesSQL)
+	if err != nil {
+       fmt.Println("db exec error...")
+	   fmt.Println(err)
+	}
+
 
 	rout.HandleFunc("/", handleFunc)
 	rout.HandleFunc("/art/{id:[0-9]+}", articleshowhandler).Methods("GET").Name("article.show....")
