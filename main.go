@@ -1,15 +1,19 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 	_ "github.com/gorilla/mux"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	_ "github.com/mattn/go-sqlite3"
+	//	"gorm.io/driver/mysql"
+	//"gorm.io/gorm"
 	"html/template"
+	"log"
 	"net/http"
 	"strings"
-	"time"
 )
 
 var rout = muxinit().StrictSlash(true)
@@ -27,16 +31,36 @@ func main() {
 	//	DBName: "test001",
 	//	AllowNativePasswords: true,
 	//}
-	//db, err := sql.Open("mysql", config.FormatDSN())
-	db, err := sql.Open("mysql", "root:123456@tcp(10.0.1.129:3306)/test001")
+	//conn, err := sql.Open("mysql", config.FormatDSN())
+	//var conn *gorm.DB
 
-	fmt.Println(db)
+//	dsn := "root:123456@tcp(10.0.1.129:3306)/test001?charset=utf8mb4&parseTime=True&loc=Local"
+//	conn, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+
+	db, err := gorm.Open("sqlite3", "test.db")
+	//conn, err := gorm.Open("mysql", "root:123456@tcp(10.0.1.129:3306)/test001?charset=utf8&parseTime=True&loc=Local")
+
+//	fmt.Println(conn)
+
 	if err != nil {
-		fmt.Println("DB error...")
+		fmt.Println("DB error01...")
+		log.Println(err)
 	}
-	db.SetConnMaxLifetime(5*time.Second)
-	db.SetMaxOpenConns(25)
-	db.SetConnMaxIdleTime(25)
+db.AutoMigrate(&ArticlesFormData{})
+
+
+//	db, _ := conn.DB()
+//	db.SetConnMaxLifetime(5*time.Second)
+//	db.SetMaxOpenConns(25)
+//  db.SetConnMaxIdleTime(25)
+
+//	conn.AutoMigrate(&ArticlesFormData{})
+
+/*	if err != nil {
+		fmt.Println("DB error02...")
+		log.Println(err)
+	}*/
+	defer db.Close()
 
 	err = db.Ping()
 	if err != nil {
@@ -52,13 +76,13 @@ func main() {
 ); `
 	db.Exec(createArticlesSQL)
 	if err != nil {
-       fmt.Println("db exec error...")
+       fmt.Println("conn exec error...")
 	   fmt.Println(err)
 	}else {
-		fmt.Println("db ok")
+		fmt.Println("conn ok")
 	}
 
-	stmt, err := db.Prepare("INSERT INTO articles(title, body) VALUES(?,?)")
+/*	stmt, err := db.Prepare("INSERT INTO articles(title, body) VALUES(?,?,?)")
 	if err != nil {
 		fmt.Println("stmt error...")
 	}
@@ -66,6 +90,7 @@ func main() {
     defer stmt.Close()
 	 title1 := "1111111121"
 	 body1 := "2222222222334422222222222"
+	// tempword := "555555555"
 
 	 rs, err := stmt.Exec(title1,body1)
 	if err != nil {
@@ -74,7 +99,7 @@ func main() {
 	if id, _ :=rs.LastInsertId(); id >0 {
 		fmt.Println("id: %v",id)
 	}
-
+*/
 	rout.HandleFunc("/", handleFunc)
 	rout.HandleFunc("/art/{id:[0-9]+}", articleshowhandler).Methods("GET").Name("article.show....")
 	rout.HandleFunc("/art/create", articlepost).Methods("GET").Name("article.showP....")
@@ -131,11 +156,13 @@ func middleware(next http.Handler) http.Handler {
 }
 
 type ArticlesFormData struct {
+	gorm.Model
 	Title  string
 	Body   string
+	tempword string
 	URL    interface{}
 	Errors interface{}
-}
+	}
 
 func articlepost(w http.ResponseWriter, r *http.Request) {
 
