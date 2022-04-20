@@ -13,11 +13,16 @@ import (
 )
 
 func main() {
+	http.HandleFunc("/", hello)
 	http.HandleFunc("/upload", upload)
-	err := http.ListenAndServe(":3000", nil) //設置監聽的埠
+	err := http.ListenAndServe(":8080", nil) //設置監聽的埠
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
+}
+
+func hello(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("hello................"))
 }
 
 // 處理/upload 邏輯
@@ -31,7 +36,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		t, _ := template.ParseFiles("upload.gohtml")
 		t.Execute(w, token)
 	} else {
-		r.ParseMultipartForm(32 << 20)
+		r.ParseMultipartForm(1024)
 		file, handler, err := r.FormFile("uploadfile")
 		if err != nil {
 			fmt.Println(err)
@@ -46,5 +51,6 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		}
 		defer f.Close()
 		io.Copy(f, file)
+		log.Println("copy.....")
 	}
 }
